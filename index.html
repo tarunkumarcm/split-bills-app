@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Split Bills</title>
+  <style>
+    body { font-family: Arial; max-width: 500px; margin: auto; padding: 20px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; }
+    .card { border: 1px solid #ddd; padding: 10px; margin-top: 10px; }
+  </style>
+</head>
+
+<body>
+
+<h2>Split Bills</h2>
+
+<input id="person" placeholder="Who paid?" />
+<input id="amount" type="number" placeholder="Amount" />
+<input id="desc" placeholder="Description" />
+
+<button onclick="addExpense()">Add Expense</button>
+
+<div class="card">
+  <h3>Expenses</h3>
+  <div id="list"></div>
+</div>
+
+<div class="card">
+  <h3>Summary</h3>
+  <div id="summary"></div>
+</div>
+
+<button onclick="resetAll()">Reset</button>
+
+<script>
+let data = JSON.parse(localStorage.getItem("bills")) || [];
+
+function save() {
+  localStorage.setItem("bills", JSON.stringify(data));
+}
+
+function addExpense() {
+  const person = document.getElementById("person").value;
+  const amount = parseFloat(document.getElementById("amount").value);
+  const desc = document.getElementById("desc").value;
+
+  if (!person || !amount) return;
+
+  data.push({ person, amount, desc });
+  save();
+  render();
+
+  document.getElementById("person").value = "";
+  document.getElementById("amount").value = "";
+  document.getElementById("desc").value = "";
+}
+
+function resetAll() {
+  if (confirm("Clear all data?")) {
+    data = [];
+    save();
+    render();
+  }
+}
+
+function render() {
+  const list = document.getElementById("list");
+  const summary = document.getElementById("summary");
+
+  list.innerHTML = "";
+  summary.innerHTML = "";
+
+  let totals = {};
+
+  data.forEach(e => {
+    list.innerHTML += `<div>${e.person} - ₹${e.amount} (${e.desc || ""})</div>`;
+    totals[e.person] = (totals[e.person] || 0) + e.amount;
+  });
+
+  let people = Object.keys(totals);
+  let total = Object.values(totals).reduce((a,b)=>a+b,0);
+  let per = people.length ? total / people.length : 0;
+
+  people.forEach(p => {
+    summary.innerHTML += `<div>${p}: ₹${totals[p].toFixed(2)}</div>`;
+  });
+
+  summary.innerHTML += `<hr>Total: ₹${total.toFixed(2)}<br>Per person: ₹${per.toFixed(2)}<br><br>`;
+
+  people.forEach(p => {
+    let diff = totals[p] - per;
+    if (diff < 0) {
+      summary.innerHTML += `<div>${p} owes ₹${Math.abs(diff).toFixed(2)}</div>`;
+    }
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
